@@ -40,9 +40,9 @@ def getHitCount(hitsArray):
 
 # Delete old IP from Elastic
 def deleteFromElastic():
-        searchUrl = "http://localhost:64298/ipfeed/_search?&pretty=true"
-        headers = {'Content-Type': 'application/json'}
-        searchQuery = {
+	searchUrl = "http://localhost:64298/ipfeed/_search?&pretty=true"
+	headers = {'Content-Type': 'application/json'}
+	searchQuery = {
                 "query":
                         {"bool":
                                 {"must":
@@ -54,16 +54,16 @@ def deleteFromElastic():
                                 }
                         }
                 }
-        hits = requests.post(searchUrl, json=searchQuery, headers=headers).json()['hits']['hits']
-        if len(hits) > 0:
-                print("[+] Deleting " + len(hits) + " documents...")
-                for hit in hits:
-                        deleteUrl = 'http://localhost:64298/ipfeed/_doc/' + hit["_id"] + '?pretty'
-                        response = requests.delete(deleteUrl)
-                        print("[+] indexID: " + hit["_id"] + " result: " + response["result"])
-        else:
-                print("[+] No old IPs")
-
+	hits = requests.post(searchUrl, json=searchQuery, headers=headers).json()['hits']['hits']
+	if len(hits) > 0:
+		print("[+] Deleting " + len(hits) + " documents...")
+		for hit in hits:
+			deleteUrl = 'http://localhost:64298/ipfeed/_doc/' + hit["_id"] + '?pretty'
+			response = requests.delete(deleteUrl)
+			print("[+] indexID: " + hit["_id"] + " result: " + response["result"])
+	else:
+		print("[+] No old IPs")
+	return len(hits)
 # Add Hits Data to Elastic
 def addToElastic(data, honeyPot):
 	now = datetime.now()
@@ -71,6 +71,9 @@ def addToElastic(data, honeyPot):
 	searchUrl = "http://localhost:64298/ipfeed/_search?&pretty=true"
 	insertUrl = "http://localhost:64298/ipfeed/_doc/?pretty"
 	headers = {'Content-Type': 'application/json'}
+	created = 0
+	updated = 0
+	failed = 0
 	for obj in data:
 		searchQuery = {
 			"query": {
@@ -89,6 +92,7 @@ def addToElastic(data, honeyPot):
 			"LastDate": date,
 		}
 		response = requests.post(searchUrl, json=searchQuery, headers=headers).json()['hits']['hits']
+
 		if response != []:
 			id = response[0]['_id']
 			firstDate = response[0]['_source']['FirstDate']
@@ -104,6 +108,10 @@ def addToElastic(data, honeyPot):
 					"LastDate": date,
 				}
 				response = requests.post(updateUrl, json=updateQuery, headers=headers).json()
+				if response['result'] != 'updated':
+					failed+=1
+				else:
+					updated+=1
 				print("[+] indexID: " + response['_id'] + " result: " + response['result'])
 			else:
 				updateQuery = insertQuery = {
@@ -114,10 +122,19 @@ def addToElastic(data, honeyPot):
 					"LastDate": date
 				}
 				response = requests.post(updateUrl, json=updateQuery, headers=headers).json()
+				if response['result'] != 'updated':
+					failed+=1
+				else:
+					updated+=1
 				print("[+] indexID: " + response['_id'] + " result: " + response['result'])
 		else:
 			response = requests.post(insertUrl, json=insertQuery, headers=headers).json()
+			if response['result'] != 'created':
+				failed+=1
+			else:
+				created+=1
 			print("[+] indexID: " + response['_id'] + " result: " + response['result'])
+	return created, updated, failed
 
 # Queries to fetch data from each honey pot
 tannerDataQuery = {
@@ -324,6 +341,7 @@ adbhoneyDataQuery = {
       "bool": {
         "must": [
           {"match": {"type": "Adbhoney"}},
+	  {"exists": {"field": "src_ip"}},
           {"range": {"@timestamp": { "gte": "now-1h"}}}
         ],
         "must_not": [
@@ -384,7 +402,7 @@ def getMailoneyData(hitsArray):
 			dataObj = [hit["_source"]["src_ip"],hit["_source"]["data"]]
 			data.append(dataObj)
 	writeToFile(data, headers, "MailoneyData.csv")
-	addToElastic(getHitCount(hitsArray), "Mailoney")
+	return addToElastic(getHitCount(hitsArray), "Mailoney")
 
 def getCowrieData(hitsArray):
 	headers = ["IP","Reputation","Username","Password","Message","CowrieEventId"]
@@ -394,58 +412,58 @@ def getCowrieData(hitsArray):
 			dataObj = [hit["_source"]["src_ip"],hit["_source"]["ip_rep"],hit["_source"]["username"],hit["_source"]["password"],hit["_source"]["message"],hit["_source"]["eventid"]]
 			data.append(dataObj)
 	writeToFile(data, headers, "CowrieData.csv")
-	addToElastic(getHitCount(hitsArray), "Cowrie")
+	return addToElastic(getHitCount(hitsArray), "Cowrie")
 
 def getSuricataData(hitsArray):
-	addToElastic(getHitCount(hitsArray), "Suricata")
+	return addToElastic(getHitCount(hitsArray), "Suricata")
 
 def getDdosData(hitsArray):
-	addToElastic(getHitCount(hitsArray), "Ddospot")
+	return addToElastic(getHitCount(hitsArray), "Ddospot")
 
 def getSentrypeerData(hitsArray):
-	addToElastic(getHitCount(hitsArray), "Sentrypeer")
+	return addToElastic(getHitCount(hitsArray), "Sentrypeer")
 
 def getTannerData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Tanner")
+        return addToElastic(getHitCount(hitsArray), "Tanner")
 
 def getRedisData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Redishoneypot")
+        return addToElastic(getHitCount(hitsArray), "Redishoneypot")
 
 def getIpphoneyData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Ipphoney")
+        return addToElastic(getHitCount(hitsArray), "Ipphoney")
 
 def getHoneytrapData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Honeytrap")
+        return addToElastic(getHitCount(hitsArray), "Honeytrap")
 
 def getHeraldingData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Heralding")
+        return addToElastic(getHitCount(hitsArray), "Heralding")
 
 def getFattData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Fatt")
+        return addToElastic(getHitCount(hitsArray), "Fatt")
 
 def getElasticPotData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "ElasticPot")
+        return addToElastic(getHitCount(hitsArray), "ElasticPot")
 
 def getDicompotData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Dicompot")
+        return addToElastic(getHitCount(hitsArray), "Dicompot")
 
 def getCiscoasaData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Ciscoasa")
+        return addToElastic(getHitCount(hitsArray), "Ciscoasa")
 
 def getAdbhoneyData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Adbhoney")
+        return addToElastic(getHitCount(hitsArray), "Adbhoney")
 
 def getCitrixData(hitsArray):
-	addToElastic(getHitCount(hitsArray), "CitrixHoneyPot")
+	return addToElastic(getHitCount(hitsArray), "CitrixHoneyPot")
 
 def getDionaeaData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Dionaea")
+        return addToElastic(getHitCount(hitsArray), "Dionaea")
 
 def getConpotData(hitsArray):
-        addToElastic(getHitCount(hitsArray), "Conpot")
+        return addToElastic(getHitCount(hitsArray), "Conpot")
 
 def execute():
-	deleteFromElastic()
+	deleted = deleteFromElastic()
 	honeyPots = [
 	        {'function': getTannerData, 'query': tannerDataQuery},
         	{'function': getMailoneyData, 'query': mailoneyDataQuery},
@@ -470,8 +488,21 @@ def execute():
 		'Content-Type': 'application/json',
 	}
 	url = "http://localhost:64298/*/_search?size=10000&pretty=true"
+	created = 0
+	updated = 0
+	failed = 0
 	for pot in honeyPots:
 		hits = requests.post(url, json=pot['query'], headers=headers).json()['hits']['hits']
-		pot['function'](hits)
-	
+		pCreated, pUpdated, pFailed = pot['function'](hits)
+		created+=pCreated
+		updated+=pUpdated
+		failed+=pFailed
+
+	print("\n[+] *********************************************")
+	print("[+] " + str(created) + " new IPs Added.")
+	print("[+] " + str(updated) + " IPs Updated.")
+	print("[+] " + str(deleted) + " IPs Deleted.")
+	print("[+] " + str(failed) + " Failed.")
+	print("[+] *********************************************\n")
+
 execute()
