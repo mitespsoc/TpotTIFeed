@@ -4,7 +4,7 @@ import csv
 from datetime import datetime
 from ipaddress import ip_address
 #curl -XPUT "http://localhost:64298/ipfeed?pretty" 
-#-d '{"settings": {"number_of_shards": 1}},{"mappings": {"_default": {"_timestamp": {"enabled": true, "store": true}}}}'
+#-d '{"settings": {"number_of_shards": 1}},{"mappings": {"_default": {"_timestamp": {"enabled": true, "store": true, "format": "basic_date_time"}}}}'
 #-H 'Content-Type: application/json'
 
 # Write data into CSV
@@ -67,7 +67,7 @@ def deleteFromElastic():
 # Add Hits Data to Elastic
 def addToElastic(data, honeyPot):
 	now = datetime.now()
-	date = now.strftime("%Y-%m-%d")
+	date = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 	searchUrl = "http://localhost:64298/ipfeed/_search?&pretty=true"
 	insertUrl = "http://localhost:64298/ipfeed/_doc/?pretty"
 	headers = {'Content-Type': 'application/json'}
@@ -92,7 +92,7 @@ def addToElastic(data, honeyPot):
 			"LastDate": date,
 		}
 		response = requests.post(searchUrl, json=searchQuery, headers=headers).json()['hits']['hits']
-
+		
 		if response != []:
 			id = response[0]['_id']
 			firstDate = response[0]['_source']['FirstDate']
