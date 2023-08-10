@@ -1,6 +1,7 @@
 import json
 import csv
 import requests
+import os
 
 def writeToFile(data, headers, fileName):
     f = open(fileName, 'w', encoding='UTF8')
@@ -21,3 +22,6 @@ for hit in hits:
     json.dump(hit['_source'], outFile)
     outFile.write("\n")
 
+os.system('cmd /k "git add ipfeed.json"')
+os.system('cmd /k "git commit -m "IP Feed Update"')
+os.system('cmd /k "git push"')
