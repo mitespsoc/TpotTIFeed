@@ -21,7 +21,8 @@ outFile = open('ipfeed.json', 'w')
 for hit in hits:
     json.dump(hit['_source'], outFile)
     outFile.write("\n")
+outFile.close()
 
-os.system('cmd /k "git add ipfeed.json"')
-os.system('cmd /k "git commit -m "IP Feed Update"')
-os.system('cmd /k "git push"')
+os.system('cmd /c "git add ipfeed.json"')
+os.system('cmd /c "git commit -m "IP Feed Update"')
+os.system('cmd /c "git push"')
