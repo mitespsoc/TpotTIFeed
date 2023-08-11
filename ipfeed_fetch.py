@@ -10,7 +10,7 @@ def writeToFile(data, headers, fileName):
     writer.writerows(data)
     f.close()
 
-searchUrl = "http://4.194.176.219:64298/ipfeed/_search?size=10000&pretty=true"
+searchUrl = "http://yourIP:yourPort/ipfeed/_search?size=10000&pretty=true"
 headers = {
     'Content-Type': 'application/json',
 }
