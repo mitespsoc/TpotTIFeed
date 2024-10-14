@@ -6,3 +6,5 @@ python fetchFeed.py
 git add ipFeed.csv ipfeed.json
 git commit -m "Updated IP Feed - $date"
 git push
+
+echo "IpFeed Updated - $date" > summary.log
