@@ -1,13 +1,22 @@
-cd ~/TpotTIFeed
 
-python3 fetchFeed.py
-
-
-git add ipfeed.json ipFeed.csv
+date=$(date)
 
 
-git commit -m "Auto-updated feed"
+source .venv/bin/activate
+
+
+python fetchFeed.py
+
+
+git add ipFeed.csv ipfeed.json
+
+
+git commit -m "Updated IP Feed - $date"
 
 
 git push
+
+# Log the summary of the execution
+echo "IpFeed Updated - $date" >> summary.log
+
 
